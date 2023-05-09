@@ -12,9 +12,7 @@ PKG_VERSION:=2.2.10
 PKG_RELEASE:=1
 
 PKG_SOURCE:=freeradius-server-$(PKG_VERSION).tar.bz2
-PKG_SOURCE_URL:=\
-	ftp://ftp.freeradius.org/pub/freeradius/ \
-	ftp://ftp.freeradius.org/pub/freeradius/old/
+PKG_SOURCE_URL:=ftp://ftp.freeradius.org/pub/freeradius/old/
 PKG_MD5SUM:=f1ce12d2b8258585cb3d525f5bdfeb17
 PKG_MAINTAINER:=Daniel Golle <daniel@makrotopia.org>
 PKG_LICENSE:=GPL-2.0
@@ -86,6 +84,16 @@ define Package/freeradius2-mod-detail/conffiles
 /etc/freeradius2/modules/detail
 endef
 
+define Package/freeradius2-mod-digest
+  $(call Package/freeradius2/Default)
+  DEPENDS:=freeradius2
+  TITLE:=HTTP Digest Authentication
+endef
+
+define Package/freeradius2-mod-digest/conffiles
+/etc/freeradius2/modules/digest
+endef
+
 define Package/freeradius2-mod-eap
   $(call Package/freeradius2/Default)
   DEPENDS:=freeradius2
@@ -100,6 +108,12 @@ define Package/freeradius2-mod-eap-gtc
   $(call Package/freeradius2/Default)
   DEPENDS:=freeradius2-mod-eap
   TITLE:=EAP/GTC module
+endef
+
+define Package/freeradius2-mod-eap-leap
+  $(call Package/freeradius2/Default)
+  DEPENDS:=freeradius2-mod-eap
+  TITLE:=EAP/LEAP module
 endef
 
 define Package/freeradius2-mod-eap-md5
@@ -299,10 +313,18 @@ define Package/freeradius2-mod-sql-mysql
   TITLE:=MySQL module
 endef
 
-define Package/freeradius2-mod-sql-pgsql
+define Package/freeradius2-mod-sql-mysql/conffiles
+/etc/freeradius2/sql/mysql
+endef
+
+define Package/freeradius2-mod-sql-postgresql
   $(call Package/freeradius2/Default)
   DEPENDS:=freeradius2-mod-sql +libpq
   TITLE:=PostgreSQL module
+endef
+
+define Package/freeradius2-mod-sql-postgresql/conffiles
+/etc/freeradius2/sql/postgresql
 endef
 
 define Package/freeradius2-mod-sql-sqlite
@@ -311,10 +333,25 @@ define Package/freeradius2-mod-sql-sqlite
   TITLE:=SQLite module
 endef
 
+define Package/freeradius2-mod-sql-sqlite/conffiles
+/etc/freeradius2/sql/sqlite
+endef
+
 define Package/freeradius2-mod-sqlcounter
   $(call Package/freeradius2/Default)
   DEPENDS:=freeradius2-mod-sql
   TITLE:=Generic SQL Counter module
+endef
+
+define Package/freeradius2-mod-sqlippool
+  $(call Package/freeradius2/Default)
+  DEPENDS:=+freeradius2-mod-sql
+  TITLE:=Radius SQL Based IP Pool module
+endef
+
+define Package/freeradius2-mod-sqlippool/conffiles
+/etc/freeradius2/sqlippool.conf
+/etc/freeradius2/modules/dhcp_sqlippool
 endef
 
 define Package/freeradius2-mod-radutmp
@@ -326,6 +363,16 @@ endef
 define Package/freeradius2-mod-radutmp/conffiles
 /etc/freeradius2/modules/radutmp
 /etc/freeradius2/modules/sradutmp
+endef
+
+define Package/freeradius2-mod-unix
+  $(call Package/freeradius2/Default)
+  DEPENDS:=freeradius2
+  TITLE:=System Authentication
+endef
+
+define Package/freeradius2-mod-unix/conffiles
+/etc/freeradius2/modules/unix
 endef
 
 define Package/freeradius2-utils
@@ -362,8 +409,6 @@ CONFIGURE_ARGS+= \
 	--without-rlm_checkval \
 	--without-rlm_dbm \
 	--without-rlm_counter \
-	--with-rlm_expr \
-	--with-rlm_eap \
 	--without-rlm_eap_sim \
 	--without-rlm_example \
 	--without-rlm_ippool \
@@ -374,10 +419,7 @@ CONFIGURE_ARGS+= \
 	--without-rlm_perl \
 	--without-rlm_python \
 	--without-rlm_smb \
-	--with-rlm_sql \
-	--with-rlm_sqlcounter \
 	--without-rlm_sqlhpwippool \
-	--without-rlm_sqlippool \
 	--without-rlm_sql_db2 \
 	--without-rlm_sql_firebird \
 	--without-rlm_sql_freetds \
@@ -385,8 +427,6 @@ CONFIGURE_ARGS+= \
 	--without-rlm_sql_oracle \
 	--without-rlm_sql_sybase \
 	--without-rlm_sql_unixodbc \
-	--without-rlm_sql_log \
-	--without-rlm_unix \
 	--without-rlm_eap_tnc \
 	--without-rlm_eap_ikev2 \
 	--without-rlm_opendirectory \
@@ -403,9 +443,7 @@ CONFIGURE_ARGS+= \
 	--without-rlm_linelog \
 	--without-rlm_jradius \
 	--without-rlm_fastusers \
-	--without-rlm_eap_leap \
 	--without-rlm_dynamic_clients \
-	--without-rlm_digest \
 	--without-rlm_cram \
 	--without-rlm_copy_packet \
 	--without-rlm_acct_unique \
@@ -438,7 +476,7 @@ else
   CONFIGURE_ARGS+= --without-rlm_sql_mysql
 endif
 
-ifneq ($(SDK)$(CONFIG_PACKAGE_freeradius2-mod-sql-pgsql),)
+ifneq ($(SDK)$(CONFIG_PACKAGE_freeradius2-mod-sql-postgresql),)
   CONFIGURE_ARGS+= \
 		--with-rlm_sql_postgresql-include-dir="$(STAGING_DIR)/usr/include" \
 		--with-rlm_sql_postgresql-lib-dir="$(STAGING_DIR)/usr/lib"
@@ -525,6 +563,18 @@ else
   CONFIGURE_ARGS+= --without-rlm_always
 endif
 
+ifneq ($(SDK)$(CONFIG_PACKAGE_freeradius2-mod-sqlippool),)
+  CONFIGURE_ARGS+= --with-rlm_sqlippool
+else
+  CONFIGURE_ARGS+= --without-rlm_sqlippool
+endif
+
+ifneq ($(SDK)$(CONFIG_PACKAGE_freeradius2-mod-unix),)
+  CONFIGURE_ARGS+= --with-rlm_unix
+else
+  CONFIGURE_ARGS+= --without-rlm_unix
+endif
+
 CONFIGURE_VARS+= \
 	LDFLAGS="$$$$LDFLAGS" \
 	LIBS="$(CONFIGURE_LIBS)" \
@@ -579,7 +629,7 @@ endef
 
 define Package/freeradius2-utils/install
 	$(INSTALL_DIR) $(1)/usr/bin
-	for f in radclient radeapclient radwho; do \
+	for f in radclient radeapclient radtest radwho; do \
 		$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/$$$${f} $(1)/usr/bin/ ; \
 	done
 endef
@@ -605,8 +655,10 @@ $(eval $(call BuildPackage,freeradius2-common))
 $(eval $(call BuildPackage,freeradius2-democerts))
 $(eval $(call BuildPlugin,freeradius2-mod-chap,rlm_chap,modules/chap,modules,))
 $(eval $(call BuildPlugin,freeradius2-mod-detail,rlm_detail,modules/detail,modules,))
+$(eval $(call BuildPlugin,freeradius2-mod-digest,rlm_digest,modules/digest,modules,))
 $(eval $(call BuildPlugin,freeradius2-mod-eap,rlm_eap,eap.conf))
 $(eval $(call BuildPlugin,freeradius2-mod-eap-gtc,rlm_eap_gtc,))
+$(eval $(call BuildPlugin,freeradius2-mod-eap-leap,rlm_eap_leap,))
 $(eval $(call BuildPlugin,freeradius2-mod-eap-md5,rlm_eap_md5,))
 $(eval $(call BuildPlugin,freeradius2-mod-eap-mschapv2,rlm_eap_mschapv2,))
 $(eval $(call BuildPlugin,freeradius2-mod-eap-peap,rlm_eap_peap,))
@@ -623,9 +675,10 @@ $(eval $(call BuildPlugin,freeradius2-mod-preprocess,rlm_preprocess,hints huntgr
 $(eval $(call BuildPlugin,freeradius2-mod-realm,rlm_realm,proxy.conf modules/realm modules/inner-eap,modules,))
 $(eval $(call BuildPlugin,freeradius2-mod-sql,rlm_sql,sql.conf,))
 $(eval $(call BuildPlugin,freeradius2-mod-sql-mysql,rlm_sql_mysql,))
-$(eval $(call BuildPlugin,freeradius2-mod-sql-pgsql,rlm_sql_postgresql,))
+$(eval $(call BuildPlugin,freeradius2-mod-sql-postgresql,rlm_sql_postgresql,))
 $(eval $(call BuildPlugin,freeradius2-mod-sql-sqlite,rlm_sql_sqlite,))
 $(eval $(call BuildPlugin,freeradius2-mod-sqlcounter,rlm_sqlcounter,))
+$(eval $(call BuildPlugin,freeradius2-mod-sqlippool,rlm_sqlippool,sqlippool.conf modules/dhcp_sqlippool,modules,))
 $(eval $(call BuildPlugin,freeradius2-mod-sqllog,rlm_sql_log,))
 $(eval $(call BuildPlugin,freeradius2-mod-radutmp,rlm_radutmp,modules/radutmp modules/sradutmp,modules,))
 $(eval $(call BuildPlugin,freeradius2-mod-logintime,rlm_logintime,modules/logintime,modules,))
@@ -633,4 +686,5 @@ $(eval $(call BuildPlugin,freeradius2-mod-expr,rlm_expr,modules/expr,modules,))
 $(eval $(call BuildPlugin,freeradius2-mod-attr-filter,rlm_attr_filter,modules/attr_filter attrs attrs.access_reject attrs.accounting_response attrs.pre-proxy,modules,,))
 $(eval $(call BuildPlugin,freeradius2-mod-expiration,rlm_expiration,modules/expiration,modules,))
 $(eval $(call BuildPlugin,freeradius2-mod-always,rlm_always,modules/always,modules,))
+$(eval $(call BuildPlugin,freeradius2-mod-unix,rlm_unix,modules/unix,modules,))
 $(eval $(call BuildPackage,freeradius2-utils))
