@@ -1203,10 +1203,8 @@ phpdbg_main:
 				sapi_startup(phpdbg);
 				phpdbg->startup(phpdbg);
 				printf(
-					"phpdbg %s (built: %s %s)\nPHP %s, Copyright (c) 1997-2016 The PHP Group\n%s",
+					"phpdbg %s\nPHP %s, Copyright (c) 1997-2016 The PHP Group\n%s",
 					PHPDBG_VERSION,
-					__DATE__,
-					__TIME__,
 					PHP_VERSION,
 					get_zend_version()
 				);
