@@ -8,7 +8,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=php
-PKG_VERSION:=5.6.32
+PKG_VERSION:=5.6.40
 PKG_RELEASE:=1
 
 PKG_MAINTAINER:=W. Michael Petullo <mike@flyn.org>, Michael Heimpold <mhei@heimpold.de>
@@ -18,7 +18,7 @@ PKG_LICENSE_FILES:=LICENSE
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
 PKG_SOURCE_URL:=http://www.php.net/distributions/
-PKG_MD5SUM:=660cd5bc0f16eaad655b7815c757aadc
+PKG_MD5SUM:=c7dde3afb16ce7b761abf2805125d372
 
 PKG_FIXUP:=libtool autoreconf
 PKG_BUILD_PARALLEL:=1
@@ -26,25 +26,26 @@ PKG_USE_MIPS16:=0
 
 PHP5_MODULES = \
 	calendar ctype curl \
+	bcmath \
 	fileinfo \
 	dom \
 	exif \
 	ftp \
 	gettext gd gmp \
 	hash \
-	iconv intl \
+	iconv imap intl \
 	json \
 	ldap \
-	mbstring mcrypt mysql mysqli \
+	mbstring mcrypt mysql mysqli mysqlnd \
 	opcache openssl \
-	pcntl pdo pdo-mysql pdo-pgsql pdo-sqlite pgsql \
-	session shmop simplexml soap sockets sqlite3 sysvmsg sysvsem sysvshm \
+	pcntl pdo pdo-mysql pdo-pgsql pdo-sqlite pgsql phar \
+	session shmop simplexml snmp soap sockets sqlite3 sysvmsg sysvsem sysvshm \
 	tokenizer \
 	xml xmlreader xmlwriter zip \
 
 PKG_CONFIG_DEPENDS:= \
 	$(patsubst %,CONFIG_PACKAGE_php5-mod-%,$(PHP5_MODULES)) \
-	CONFIG_PHP5_FILTER CONFIG_PHP5_LIBXML CONFIG_PHP5_SYSTEMTZDATA
+	CONFIG_PHP5_FILTER CONFIG_PHP5_LIBXML CONFIG_PHP5_SYSTEMTZDATA CONFIG_PACKAGE_apache-mod-php5
 
 include $(INCLUDE_DIR)/package.mk
 include $(INCLUDE_DIR)/nls.mk
@@ -67,6 +68,7 @@ define Package/php5/config
 	config PHP5_FILTER
 		bool "PHP5 Filter support"
 		depends on PACKAGE_php5-cli || PACKAGE_php5-cgi
+		default y
 
 	config PHP5_LIBXML
 		bool "PHP5 LIBXML support"
@@ -74,8 +76,7 @@ define Package/php5/config
 
 	config PHP5_SYSTEMTZDATA
 		bool "Use system timezone data instead of php's built-in database"
-		depends on PACKAGE_php5-cli || PACKAGE_php5-cgi
-		select PACKAGE_zoneinfo-core
+		depends on PACKAGE_php5-cli || PACKAGE_php5-cgi || PACKAGE_apache-mod-php5
 		default y
 		help
 			Enabling this feature automatically selects the zoneinfo-core package
@@ -87,7 +88,8 @@ define Package/php5
   $(call Package/php5/Default)
 
   DEPENDS:=+libpcre +zlib \
-           +PHP5_LIBXML:libxml2
+           +PHP5_LIBXML:libxml2 \
+           +PHP5_SYSTEMTZDATA:zoneinfo-core
 endef
 
 define Package/php5/description
@@ -131,13 +133,45 @@ endef
 
 define Package/php5-fpm
   $(call Package/php5/Default)
-  DEPENDS+= +php5-cgi
+  DEPENDS+= +PACKAGE_php5-mod-intl:libstdcpp
   TITLE+= (FPM)
 endef
 
 define Package/php5-fpm/description
   $(call Package/php5/Default/description)
   This package contains the FastCGI Process Manager of the PHP5 interpreter.
+endef
+
+define Package/php5-mod-intl/config
+  config PHP5_FULLICUDATA
+	bool "Add dependency to full ICU Data"
+	depends on PACKAGE_php5-mod-intl
+	default n
+endef
+
+define Package/php5-mod-intl/description
+  Note that this package depends in ICU library which is built without data
+  by default. This is to satisfy programs build and run dependencies but to
+  keep the installed footprint small on the target system(s).
+  However, the data is required to make the ICU library useful - and thus
+  directly affects PHPs ICU extension, too - so consider to also
+  select/install package 'icu-full-data'.
+endef
+
+define Package/apache-mod-php5
+  $(call Package/php5/Default)
+  SUBMENU:=Web Servers/Proxies
+  SECTION:=net
+  CATEGORY:=Network
+  DEPENDS+=PACKAGE_apache-mod-php5:apache \
+	   +PACKAGE_php5-mod-intl:libstdcpp \
+	   +libpcre2 +zlib
+  TITLE:=PHP5 module for Apache Web Server
+endef
+
+define Package/apache-mod-php5/description
+  $(call Package/php5/Default/description)
+  This package contains the PHP module for the Apache Web Server.
 endef
 
 CONFIGURE_ARGS+= \
@@ -156,8 +190,7 @@ CONFIGURE_ARGS+= \
 	\
 	--with-zlib="$(STAGING_DIR)/usr" \
 	  --with-zlib-dir="$(STAGING_DIR)/usr" \
-	--with-pcre-regex="$(STAGING_DIR)/usr" \
-	--disable-phar
+	--with-pcre-regex="$(STAGING_DIR)/usr"
 
 ifneq ($(SDK)$(CONFIG_PACKAGE_php5-mod-calendar),)
   CONFIGURE_ARGS+= --enable-calendar=shared
@@ -175,6 +208,12 @@ ifneq ($(SDK)$(CONFIG_PACKAGE_php5-mod-curl),)
   CONFIGURE_ARGS+= --with-curl=shared,"$(STAGING_DIR)/usr"
 else
   CONFIGURE_ARGS+= --without-curl
+endif
+
+ifneq ($(SDK)$(CONFIG_PACKAGE_php5-mod-bcmath),)
+  CONFIGURE_ARGS+= --enable-bcmath=shared
+else
+  CONFIGURE_ARGS+= --disable-bcmath
 endif
 
 ifneq ($(SDK)$(CONFIG_PACKAGE_php5-mod-fileinfo),)
@@ -210,11 +249,10 @@ endif
 ifneq ($(SDK)$(CONFIG_PACKAGE_php5-mod-gd),)
   CONFIGURE_ARGS+= \
 	--with-gd=shared \
-	--without-freetype-dir \
+	--with-freetype-dir="$(STAGING_DIR)" \
 	--with-jpeg-dir="$(STAGING_DIR)/usr" \
 	--with-png-dir="$(STAGING_DIR)/usr" \
 	--without-xpm-dir \
-	--without-t1lib \
 	--enable-gd-native-ttf \
 	--disable-gd-jis-conv
 else
@@ -237,6 +275,15 @@ ifneq ($(SDK)$(CONFIG_PACKAGE_php5-mod-iconv),)
   CONFIGURE_ARGS+= --with-iconv=shared,"$(ICONV_PREFIX)"
 else
   CONFIGURE_ARGS+= --without-iconv
+endif
+
+ifneq ($(SDK)$(CONFIG_PACKAGE_php5-mod-imap),)
+  CONFIGURE_ARGS+= \
+	--with-imap=shared,"$(STAGING_DIR)/usr" \
+	--with-kerberos=no \
+	--with-imap-ssl="$(STAGING_DIR)/usr"
+else
+  CONFIGURE_ARGS+= --without-imap
 endif
 
 ifneq ($(SDK)$(CONFIG_PACKAGE_php5-mod-intl),)
@@ -278,9 +325,15 @@ else
 endif
 
 ifneq ($(SDK)$(CONFIG_PACKAGE_php5-mod-mysqli),)
-  CONFIGURE_ARGS+= --with-mysqli=shared,"$(STAGING_DIR)/usr/bin/mysql_config"
+  CONFIGURE_ARGS+= --with-mysqli=shared
 else
   CONFIGURE_ARGS+= --without-mysqli
+endif
+
+ifneq ($(SDK)$(CONFIG_PACKAGE_php5-mod-mysqlnd),)
+  CONFIGURE_ARGS+= --enable-mysqlnd=shared
+else
+  CONFIGURE_ARGS+= --disable-mysqlnd
 endif
 
 ifneq ($(SDK)$(CONFIG_PACKAGE_php5-mod-opcache),)
@@ -289,7 +342,7 @@ else
   CONFIGURE_ARGS+= --disable-opcache
 endif
 
-ifneq ($(SDK)$(CONFIG_PACKAGE_php5-mod-openssl),)
+ifneq ($(SDK)$(CONFIG_PACKAGE_php5-mod-openssl)$(CONFIG_PACKAGE_php5-mod-ftp)$(CONFIG_PACKAGE_php5-mod-imap)$(CONFIG_PACKAGE_php5-mod-snmp),)
   CONFIGURE_ARGS+= \
 	--with-openssl=shared,"$(STAGING_DIR)/usr" \
 	--with-kerberos=no \
@@ -307,7 +360,7 @@ endif
 ifneq ($(SDK)$(CONFIG_PACKAGE_php5-mod-pdo),)
   CONFIGURE_ARGS+= --enable-pdo=shared
   ifneq ($(SDK)$(CONFIG_PACKAGE_php5-mod-pdo-mysql),)
-    CONFIGURE_ARGS+= --with-pdo-mysql=shared,"$(STAGING_DIR)/usr"
+    CONFIGURE_ARGS+= --with-pdo-mysql=shared
   else
     CONFIGURE_ARGS+= --without-pdo-mysql
   endif
@@ -331,6 +384,12 @@ else
   CONFIGURE_ARGS+= --without-pgsql
 endif
 
+ifneq ($(SDK)$(CONFIG_PACKAGE_php5-mod-phar),)
+  CONFIGURE_ARGS+= --enable-phar=shared
+else
+  CONFIGURE_ARGS+= --disable-phar
+endif
+
 ifneq ($(SDK)$(CONFIG_PACKAGE_php5-mod-session),)
   CONFIGURE_ARGS+= --enable-session=shared
 else
@@ -347,6 +406,12 @@ ifneq ($(SDK)$(CONFIG_PACKAGE_php5-mod-simplexml),)
   CONFIGURE_ARGS+= --enable-simplexml=shared
 else
   CONFIGURE_ARGS+= --disable-simplexml
+endif
+
+ifneq ($(SDK)$(CONFIG_PACKAGE_php5-mod-snmp),)
+  CONFIGURE_ARGS+= --with-snmp=shared,"$(STAGING_DIR)/usr"
+else
+  CONFIGURE_ARGS+= --without-snmp
 endif
 
 ifneq ($(SDK)$(CONFIG_PACKAGE_php5-mod-soap),)
@@ -439,6 +504,10 @@ else
   CONFIGURE_ARGS+= --without-system-tzdata
 endif
 
+ifneq ($(CONFIG_PACKAGE_apache-mod-php5),)
+  CONFIGURE_ARGS+= --with-apxs2=$(STAGING_DIR)/usr/bin/apxs
+endif
+
 CONFIGURE_VARS+= \
 	ac_cv_c_bigendian_php=$(if $(CONFIG_BIG_ENDIAN),yes,no) \
 	php_cv_cc_rpath="no" \
@@ -490,6 +559,31 @@ define Package/php5-fpm/install
 	$(INSTALL_BIN) ./files/php5-fpm.init $(1)/etc/init.d/php5-fpm
 endef
 
+define Package/apache-mod-php5/install
+	$(INSTALL_DIR) $(1)/usr/lib/apache2
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/libs/libphp5.so $(1)/usr/lib/apache2
+endef
+
+define Package/php5-mod-openssl/postinst
+#!/bin/sh
+[ -n "$$IPKG_INSTROOT" ] || {
+	if [ -e "/etc/php5/openssl.ini" ] && [ -e "/etc/php5/15_openssl.ini" ]; then
+		echo "Renaming PHP ini file '/etc/php5/openssl.ini' -> '/etc/php5/15_openssl.ini'"
+		mv /etc/php5/openssl.ini /etc/php5/15_openssl.ini
+	fi
+}
+endef
+
+define Package/php5-mod-mysqlnd/postinst
+#!/bin/sh
+[ -n "$$IPKG_INSTROOT" ] || {
+	if [ -e "/etc/php5/mysqlnd.ini" ] && [ -e "/etc/php5/20_mysqlnd.ini" ]; then
+		echo "Renaming PHP ini file '/etc/php5/mysqlnd.ini' -> '/etc/php5/20_mysqlnd.ini'"
+		mv /etc/php5/mysqlnd.ini /etc/php5/20_mysqlnd.ini
+	fi
+}
+endef
+
 define Build/Prepare
 	$(call Build/Prepare/Default)
 	( cd $(PKG_BUILD_DIR); touch configure.in; ./buildconf --force )
@@ -537,6 +631,7 @@ $(eval $(call BuildPackage,php5-cgi))
 $(eval $(call BuildPackage,php5-cli))
 $(eval $(call BuildPackage,php5-fastcgi))
 $(eval $(call BuildPackage,php5-fpm))
+$(eval $(call BuildPackage,apache-mod-php5))
 
 #$(eval $(call BuildModule,NAME,TITLE[,PKG DEPENDS]))
 $(eval $(call BuildModule,calendar,Calendar))
@@ -544,31 +639,36 @@ $(eval $(call BuildModule,ctype,Ctype))
 $(eval $(call BuildModule,curl,cURL,+PACKAGE_php5-mod-curl:libcurl))
 $(eval $(call BuildModule,dom,DOM,+@PHP5_LIBXML +PACKAGE_php5-mod-dom:libxml2))
 $(eval $(call BuildModule,exif,EXIF))
+$(eval $(call BuildModule,bcmath,Bcmath))
 $(eval $(call BuildModule,fileinfo,Fileinfo))
 $(eval $(call BuildModule,ftp,FTP,+PACKAGE_php5-mod-ftp:libopenssl))
-$(eval $(call BuildModule,gd,GD graphics,+PACKAGE_php5-mod-gd:libjpeg +PACKAGE_php5-mod-gd:libpng))
+$(eval $(call BuildModule,gd,GD graphics,+PACKAGE_php5-mod-gd:libjpeg +PACKAGE_php5-mod-gd:libpng +PACKAGE_php5-mod-gd:libfreetype))
 $(eval $(call BuildModule,gettext,Gettext,+PACKAGE_php5-mod-gettext:libintl-full))
 $(eval $(call BuildModule,gmp,GMP,+PACKAGE_php5-mod-gmp:libgmp))
 $(eval $(call BuildModule,hash,Hash))
 $(eval $(call BuildModule,iconv,iConv,$(ICONV_DEPENDS)))
-$(eval $(call BuildModule,intl,Internationalization Functions,+PACKAGE_php5-mod-intl:icu))
+$(eval $(call BuildModule,imap,IMAP,+PACKAGE_php5-mod-imap:libopenssl +PACKAGE_libpam:libpam +PACKAGE_php5-mod-imap:uw-imap))
+$(eval $(call BuildModule,intl,Internationalization Functions,+PACKAGE_php5-mod-intl:icu +PHP5_FULLICUDATA:icu-full-data))
 $(eval $(call BuildModule,json,JSON))
 $(eval $(call BuildModule,ldap,LDAP,+PACKAGE_php5-mod-ldap:libopenldap +PACKAGE_php5-mod-ldap:libsasl2))
 $(eval $(call BuildModule,mbstring,MBString))
 $(eval $(call BuildModule,mcrypt,Mcrypt,+PACKAGE_php5-mod-mcrypt:libmcrypt +PACKAGE_php5-mod-mcrypt:libltdl))
 $(eval $(call BuildModule,mysql,MySQL,+PACKAGE_php5-mod-mysql:libmysqlclient))
-$(eval $(call BuildModule,mysqli,MySQL Improved Extension,+PACKAGE_php5-mod-mysqli:libmysqlclient))
+$(eval $(call BuildModule,mysqli,MySQL Improved Extension,+PACKAGE_php5-mod-mysqli:php5-mod-mysqlnd))
+$(eval $(call BuildModule,mysqlnd,MySQL Native Driver,+PACKAGE_php5-mod-openssl:php5-mod-openssl))
 $(eval $(call BuildModule,opcache,OPcache,,zend))
 $(eval $(call BuildModule,openssl,OpenSSL,+PACKAGE_php5-mod-openssl:libopenssl))
 $(eval $(call BuildModule,pcntl,PCNTL))
 $(eval $(call BuildModule,pdo,PHP Data Objects))
-$(eval $(call BuildModule,pdo-mysql,PDO driver for MySQL,+php5-mod-pdo +PACKAGE_php5-mod-pdo-mysql:libmysqlclient))
+$(eval $(call BuildModule,pdo-mysql,PDO driver for MySQL,+php5-mod-pdo +PACKAGE_php5-mod-pdo-mysql:php5-mod-mysqlnd))
 $(eval $(call BuildModule,pdo-pgsql,PDO driver for PostgreSQL,+php5-mod-pdo +PACKAGE_php5-mod-pdo-pgsql:libpq))
 $(eval $(call BuildModule,pdo-sqlite,PDO driver for SQLite 3.x,+php5-mod-pdo +PACKAGE_php5-mod-pdo-sqlite:libsqlite3 +PACKAGE_php5-mod-pdo-sqlite:librt))
 $(eval $(call BuildModule,pgsql,PostgreSQL,+PACKAGE_php5-mod-pgsql:libpq))
+$(eval $(call BuildModule,phar,Phar Archives))
 $(eval $(call BuildModule,session,Session))
 $(eval $(call BuildModule,shmop,Shared Memory))
 $(eval $(call BuildModule,simplexml,SimpleXML,+@PHP5_LIBXML +PACKAGE_php5-mod-simplexml:libxml2))
+$(eval $(call BuildModule,snmp,SNMP,+PACKAGE_php5-mod-snmp:libnetsnmp +PACKAGE_php5-mod-snmp:libopenssl))
 $(eval $(call BuildModule,soap,SOAP,+@PHP5_LIBXML +PACKAGE_php5-mod-soap:libxml2))
 $(eval $(call BuildModule,sockets,Sockets))
 $(eval $(call BuildModule,sqlite3,SQLite3,+PACKAGE_php5-mod-sqlite3:libsqlite3))
