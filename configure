@@ -14045,7 +14045,9 @@ $as_echo_n "checking for working Perl support... " >&6; }
 	if test -z "$perlpath"; then
 		perl_check_error="perl binary not found"
 	else
-		PERL_CFLAGS=`$perlpath -MExtUtils::Embed -e ccopts 2>/dev/null`
+            if test -z "$PERL_CFLAGS"; then
+         PERL_CFLAGS=`$perlpath -MExtUtils::Embed -e ccopts 2>/dev/null`
+            fi
 	fi
 
 	if test "x$ac_cv_c_compiler_gnu" = "xyes" -a -z "`echo $host_os|grep 'bsd\|linux'`"; then
@@ -14059,11 +14061,13 @@ $as_echo_n "checking for working Perl support... " >&6; }
 		if test -n "$perl_check_error"; then
 			perl_check_error="Error getting perl CFLAGS"
 		fi
-		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: not found, building without Perl" >&5
-$as_echo "not found, building without Perl" >&6; }
-		want_perl=no
-	else
-		PERL_LDFLAGS=`$perlpath -MExtUtils::Embed -e ldopts 2>/dev/null`
+#		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: not found, building without Perl" >&5
+#$as_echo "not found, building without Perl" >&6; }
+#		want_perl=no
+#	else
+            if test -z "$PERL_LDFLAGS"; then
+         PERL_LDFLAGS=`$perlpath -MExtUtils::Embed -e ldopts 2>/dev/null`
+            fi
 
 										for word in -ldb -ldbm -lndbm -lgdbm -lc -rdynamic; do
 		  PERL_LDFLAGS=`echo $PERL_LDFLAGS | $sedpath -e "s/$word //" -e "s/$word$//"`

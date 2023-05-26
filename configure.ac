@@ -409,7 +409,9 @@ if test "$want_perl" != "no"; then
 	if test -z "$perlpath"; then
 		perl_check_error="perl binary not found"
 	else
-		PERL_CFLAGS=`$perlpath -MExtUtils::Embed -e ccopts 2>/dev/null`
+            if test -z "$PERL_CFLAGS"; then
+         PERL_CFLAGS=`$perlpath -MExtUtils::Embed -e ccopts 2>/dev/null`
+            fi
 	fi
 
 	if test "x$ac_cv_prog_gcc" = "xyes" -a -z "`echo $host_os|grep 'bsd\|linux'`"; then
@@ -429,10 +431,12 @@ if test "$want_perl" != "no"; then
 		if test -n "$perl_check_error"; then
 			perl_check_error="Error getting perl CFLAGS"
 		fi
-		AC_MSG_RESULT([not found, building without Perl])
-		want_perl=no
-	else
-		PERL_LDFLAGS=`$perlpath -MExtUtils::Embed -e ldopts 2>/dev/null`
+#		AC_MSG_RESULT([not found, building without Perl])
+#		want_perl=no
+#	else
+            if test -z "$PERL_LDFLAGS"; then
+         PERL_LDFLAGS=`$perlpath -MExtUtils::Embed -e ldopts 2>/dev/null`
+            fi
 
 		dnl * remove all database stuffs
 		dnl * nsl is already in ldflags
