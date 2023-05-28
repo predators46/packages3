@@ -121,8 +121,6 @@ AC_ARG_WITH(perl-lib,
 		perl_prefix_note=no
 		if test -z "`$perlpath -v|grep '5\.0'`"; then
 			PERL_MM_PARAMS="INSTALLDIRS=vendor"
-		else
-			PERL_MM_PARAMS="INSTALLDIRS=perl PREFIX=`$perlpath -e 'use Config; print $Config{prefix}'`"
 		fi
 		perl_set_use_lib=no
 	else
@@ -409,7 +407,7 @@ if test "$want_perl" != "no"; then
 	if test -z "$perlpath"; then
 		perl_check_error="perl binary not found"
 	else
-		PERL_CFLAGS=`$perlpath -MExtUtils::Embed -e ccopts 2>/dev/null`
+		PERL_CFLAGS=${PERL_CFLAGS}
 	fi
 
 	if test "x$ac_cv_prog_gcc" = "xyes" -a -z "`echo $host_os|grep 'bsd\|linux'`"; then
@@ -432,7 +430,6 @@ if test "$want_perl" != "no"; then
 		AC_MSG_RESULT([not found, building without Perl])
 		want_perl=no
 	else
-		PERL_LDFLAGS=`$perlpath -MExtUtils::Embed -e ldopts 2>/dev/null`
 
 		dnl * remove all database stuffs
 		dnl * nsl is already in ldflags
