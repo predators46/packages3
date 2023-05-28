@@ -140,8 +140,8 @@ all-local:
 	  if [ ! -f Makefile ]; then \
 	    $(am_v_pl__show_gen)$(perlpath) Makefile.PL $(PERL_MM_PARAMS) $(am_v_pl__hide_gen); \
 	  fi && \
-	  ($(MAKE) CC="$(CC)" CCFLAGS="$(PERL_CFLAGS) $(CFLAGS)" $(PERL_EXTRA_OPTS) || \
-	   $(MAKE) CC="$(CC)" CCFLAGS="$(PERL_CFLAGS) $(CFLAGS)" $(PERL_EXTRA_OPTS)) && \
+	  ($(MAKE) CC="$(CC)" CCFLAGS="$(PERL_CFLAGS)" || \
+	   $(MAKE) CC="$(CC)" CCFLAGS="$(PERL_CFLAGS)" && \
 	  cd ..; \
 	done
 
