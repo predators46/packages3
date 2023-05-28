@@ -8,8 +8,8 @@ EXTRA_LTLIBRARIES = \
 	libperl_core.la libfe_perl.la \
 	libperl_core_static.la libfe_perl_static.la
 
-libperl_core_la_LDFLAGS = -module -avoid-version -rpath $(moduledir)
-libfe_perl_la_LDFLAGS = -module -avoid-version -rpath $(moduledir)
+libperl_core_la_LDFLAGS = @PERL_LDFLAGS@ @PERL_USE_LIB@ -module -avoid-version -rpath $(moduledir)
+libfe_perl_la_LDFLAGS = @PERL_LDFLAGS@ @PERL_USE_LIB@ -module -avoid-version -rpath $(moduledir)
 
 perl-core.lo: irssi-core.pl.h
 perl-signals.lo: perl-signals-list.h
@@ -140,8 +140,8 @@ all-local:
 	  if [ ! -f Makefile ]; then \
 	    $(am_v_pl__show_gen)$(perlpath) Makefile.PL $(PERL_MM_PARAMS) $(am_v_pl__hide_gen); \
 	  fi && \
-	  ($(MAKE) CC="$(CC)" CCFLAGS="$(PERL_CFLAGS) $(CFLAGS)" $(PERL_EXTRA_OPTS) || \
-	   $(MAKE) CC="$(CC)" CCFLAGS="$(PERL_CFLAGS) $(CFLAGS)" $(PERL_EXTRA_OPTS)) && \
+	  ($(MAKE) CC="$(CC)" CCFLAGS="$(PERL_CFLAGS)" || \
+	   $(MAKE) CC="$(CC)" CCFLAGS="$(PERL_CFLAGS)" && \
 	  cd ..; \
 	done
 
