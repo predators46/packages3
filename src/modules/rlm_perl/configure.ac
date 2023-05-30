@@ -24,7 +24,7 @@ if test x$with_[]modname != xno; then
 		dnl # Call ExtUtils::Embed to get compiler flags
 		dnl ############################################################
 		AC_MSG_NOTICE([Calling ExtUtils::Embed to get 'ccopts'])
-		mod_cflags=$($PERL -MExtUtils::Embed -e ccopts)
+		mod_cflags=${PERL_CFLAGS}
 		
 		AC_MSG_NOTICE([ExtUtil's ccopts were \"${mod_cflags}\"])
 		
@@ -38,7 +38,7 @@ if test x$with_[]modname != xno; then
 		dnl #  Call ExtUtils::Embed to get linker flags
 		dnl ############################################################
 		AC_MSG_NOTICE([Calling ExtUtils::Embed to get 'ldflags'])
-		mod_ldflags=$($PERL -MExtUtils::Embed -e ldopts)
+		mod_ldflags=${PERL_LDFLAGS} 
 		
 		AC_MSG_NOTICE([ExtUtil's ldopts were \"${mod_ldflags}\"])
 		
@@ -120,6 +120,14 @@ fi
 
 AC_SUBST(mod_cflags)
 AC_SUBST(mod_ldflags)
+
+AC_SUBST(PERL)
+AC_SUBST(PERL_SITEDIR)
+AC_SUBST(PERL_LIBDIR)
+AC_SUBST(PERL_LIBS)
+AC_SUBST(PERL_CFLAGS)
+AC_SUBST(PERL_LDFLAGS)
+AC_SUBST(PERL_INC)
 
 AC_CONFIG_HEADER(config.h)
 
