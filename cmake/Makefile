@@ -67,7 +67,6 @@ This package provides the following libraries:
  - log
  - math
  - program_options
- - python
  - python3
  - random
  - regex
@@ -293,7 +292,6 @@ $(eval $(call DefineBoostLibrary,log,system chrono date_time thread filesystem r
 $(eval $(call DefineBoostLibrary,math,,))
 #$(eval $(call DefineBoostLibrary,mpi,,)) # OpenMPI does no exist in OpenWRT at this time.
 $(eval $(call DefineBoostLibrary,program_options,,))
-$(eval $(call DefineBoostLibrary,python,,+PACKAGE_boost-python:python))
 $(eval $(call DefineBoostLibrary,python3,,+PACKAGE_boost-python3:python3))
 $(eval $(call DefineBoostLibrary,random,system,))
 $(eval $(call DefineBoostLibrary,regex,,))
@@ -314,7 +312,6 @@ CONFIGURE_PREFIX:=$(PKG_INSTALL_DIR)
 TARGET_LDFLAGS += -pthread -lrt
 
 TARGET_CFLAGS += \
-	$(if $(CONFIG_PACKAGE_boost-python), -I$(STAGING_DIR)/usr/include/python2.7/) \
 	$(if $(CONFIG_PACKAGE_boost-python3), -I$(STAGING_DIR)/usr/include/python3.5/) \
 	$(if $(CONFIG_SOFT_FLOAT),-DBOOST_NO_FENV_H) -fPIC
 
@@ -341,10 +338,6 @@ define Build/Compile
 			echo "using python : 3.5 : $(STAGING_DIR_ROOT)/usr/bin/python3 : $(STAGING_DIR)/usr/include/python3.5/ ;" >> \
 				tools/build/src/user-config.jam; \
 		) \
-		$(if $(CONFIG_PACKAGE_boost-python), \
-			echo "using python : 2.7 : $(STAGING_DIR_ROOT)/usr/bin/python :	$(STAGING_DIR)/usr/include/python2.7/ ;" >> \
-				tools/build/src/user-config.jam; \
-		) \
 		b2 \
 			$(CONFIGURE_ARGS) \
 			--ignore-site-config \
@@ -368,8 +361,8 @@ define Build/Compile
 			$(if $(CONFIG_boost-graph-parallel),,--without-graph_parallel) \
 			$(if $(CONFIG_PACKAGE_boost-test),,--without-test) \
 			$(foreach lib,$(BOOST_LIBS), \
-				$(if $(findstring python,$(lib)), \
-				  $(if $(or $(CONFIG_PACKAGE_boost-python),$(CONFIG_PACKAGE_boost-python3)),,--without-python), \
+				$(if $(findstring python3,$(lib)), \
+				  $(if $(CONFIG_PACKAGE_boost-python3)),,--without-python), \
 				  $(if $(CONFIG_PACKAGE_boost-$(lib)),,--without-$(lib))) \
 			) \
 			$(if $(CONFIG_PACKAGE_boost-locale),boost.locale.iconv=on -sICONV_PATH=$(ICONV_PREFIX) boost.locale.posix=$(if $(USE_MUSL),on,off), \
