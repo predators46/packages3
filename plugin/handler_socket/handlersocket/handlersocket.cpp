@@ -81,7 +81,7 @@ daemon_handlersocket_init(void *p)
     if (handlersocket_plain_secret) {
       conf["plain_secret"] = handlersocket_plain_secret;
     }
-    ap->hssvr_rd = hstcpsvr_i::create(conf);
+    ap->hssvr_rd = const hstcpsvr_i::create(conf);
     ap->hssvr_rd->start_listen();
   }
   if (handlersocket_port_wr != 0) {
@@ -94,7 +94,7 @@ daemon_handlersocket_init(void *p)
     if (handlersocket_plain_secret_wr) {
       conf["plain_secret"] = handlersocket_plain_secret_wr;
     }
-    ap->hssvr_wr = hstcpsvr_i::create(conf);
+    ap->hssvr_wr = const hstcpsvr_i::create(conf);
     ap->hssvr_wr->start_listen();
   }
   st_plugin_int *const plugin = static_cast<st_plugin_int *>(p);
