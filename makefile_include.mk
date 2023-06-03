@@ -130,7 +130,7 @@ HEADERS=tommath_private.h tommath_class.h tommath_superclass.h tommath_cutoffs.h
 #INCPATH  The directory to install the header files for libtommath.
 #DATAPATH The directory to install the pdf docs.
 DESTDIR  ?=
-PREFIX   ?= /usr/local
+PREFIX   ?= /usr
 LIBPATH  ?= $(PREFIX)/lib
 INCPATH  ?= $(PREFIX)/include
 DATAPATH ?= $(PREFIX)/share/doc/libtommath/pdf
